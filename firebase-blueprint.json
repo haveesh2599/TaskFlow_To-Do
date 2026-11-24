@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile and default productivity preferences stored at users/{userId}.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Authentication UID matching the document ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's full display name.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's verified email address (PII, owner-only access).",
+          "minLength": 3,
+          "maxLength": 254
+        },
+        "defaultCategory": {
+          "type": "string",
+          "description": "Preferred default category when creating new tasks.",
+          "enum": ["Personal", "Study", "Work", "Shopping", "Health", "Other"]
+        },
+        "defaultPriority": {
+          "type": "string",
+          "description": "Preferred default priority when creating new tasks.",
+          "enum": ["Low", "Medium", "High"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the user profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the user profile was last updated."
+        }
+      },
+      "required": ["uid", "displayName", "email", "createdAt", "updatedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Personal to-do item stored in users/{userId}/tasks/{taskId}.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner UID matching parent userId path variable.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Required task title.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional task description.",
+          "minLength": 0,
+          "maxLength": 2000
+        },
+        "category": {
+          "type": "string",
+          "description": "Task category.",
+          "enum": ["Personal", "Study", "Work", "Shopping", "Health", "Other"]
+        },
+        "priority": {
+          "type": "string",
+          "description": "Task priority level.",
+          "enum": ["Low", "Medium", "High"]
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Firestore Timestamp representing the task due date."
+        },
+        "dueTime": {
+          "type": "string",
+          "description": "Optional 24h time string (HH:mm) or empty string.",
+          "maxLength": 5,
+          "pattern": "^(|([01]\\d|2[0-3]):[0-5]\\d)$"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the task is completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the task was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the task was last updated."
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "description",
+        "category",
+        "priority",
+        "dueDate",
+        "dueTime",
+        "completed",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Private user profile document keyed by Firebase Auth UID."
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": {
+        "$ref": "#/entities/Task"
+      },
+      "description": "User's private tasks subcollection."
+    }
+  }
+}

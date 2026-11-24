@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Entity Validation Helpers
+    function isValidCategory(cat) {
+      return cat is string && cat.size() >= 1 && cat.size() <= 32 &&
+        cat in ['Personal', 'Study', 'Work', 'Shopping', 'Health', 'Other'];
+    }
+
+    function isValidPriority(pri) {
+      return pri is string && pri.size() >= 1 && pri.size() <= 16 &&
+        pri in ['Low', 'Medium', 'High'];
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'email', 'defaultCategory', 'defaultPriority', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid == userId &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+        (!('defaultCategory' in data) || isValidCategory(data.defaultCategory)) &&
+        (!('defaultPriority' in data) || isValidPriority(data.defaultPriority)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTask(data, userId) {
+      return data.keys().hasAll(['userId', 'title', 'description', 'category', 'priority', 'dueDate', 'dueTime', 'completed', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['userId', 'title', 'description', 'category', 'priority', 'dueDate', 'dueTime', 'completed', 'createdAt', 'updatedAt']) &&
+        data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 && data.userId == userId &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.description is string && data.description.size() <= 2000 &&
+        isValidCategory(data.category) &&
+        isValidPriority(data.priority) &&
+        data.dueDate is timestamp &&
+        data.dueTime is string && data.dueTime.size() <= 5 &&
+        data.dueTime.matches('^(|([01]\\d|2[0-3]):[0-5]\\d)$') &&
+        data.completed is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Users Collection (PII isolated to owner only; no blanket list)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+
+      allow create: if isValidId(userId) &&
+        isOwner(userId) &&
+        isEmailVerified() &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId) &&
+        isOwner(userId) &&
+        isEmailVerified() &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'defaultCategory', 'defaultPriority', 'updatedAt']);
+
+      allow delete: if false;
+
+      // User's Tasks Subcollection (Master Gate checks parent user doc exists)
+      match /tasks/{taskId} {
+        allow get: if isValidId(userId) && isValidId(taskId) && isOwner(userId) && isEmailVerified();
+        allow list: if isOwner(userId) && isEmailVerified() && existing().userId == request.auth.uid;
+
+        allow create: if isValidId(userId) &&
+          isValidId(taskId) &&
+          isOwner(userId) &&
+          isEmailVerified() &&
+          isValidTask(incoming(), userId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isValidId(userId) &&
+          isValidId(taskId) &&
+          isOwner(userId) &&
+          isEmailVerified() &&
+          isValidTask(incoming(), userId) &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          (
+            // Action: Toggle completion status
+            incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'updatedAt']) ||
+            // Action: Edit task fields
+            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'priority', 'dueDate', 'dueTime', 'completed', 'updatedAt'])
+          );
+
+        allow delete: if isValidId(userId) &&
+          isValidId(taskId) &&
+          isOwner(userId) &&
+          isEmailVerified() &&
+          exists(/databases/$(database)/documents/users/$(userId));
+      }
+    }
+  }
+}

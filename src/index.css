@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-heading: "Manrope", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  --color-canvas: #F6F7F4;
+  --color-surface: #FFFFFF;
+  --color-ink: #252A26;
+  --color-ink-muted: #777F78;
+  --color-accent: #52765D;
+  --color-accent-hover: #42634C;
+  --color-accent-soft: #EAF1EA;
+  --color-hairline: #E5E9E4;
+  --color-success: #3F8559;
+  --color-warning: #D69A42;
+  --color-danger: #D65B55;
+}
+
+@layer base {
+  html {
+    background-color: #F6F7F4;
+    color: #252A26;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: #F6F7F4;
+    color: #252A26;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Manrope", system-ui, -apple-system, sans-serif;
+    color: #252A26;
+    text-wrap: balance;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    &:focus-visible {
+      outline: 2px solid #52765D;
+      outline-offset: 2px;
+    }
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "TaskFlow",
+  "description": "Personal to-do management web application for organizing daily tasks, tracking deadlines, and maintaining calm productivity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
