@@ -7,7 +7,6 @@ import {
   initializeFirestore,
   type Firestore,
 } from 'firebase/firestore';
-import firebaseAppletConfig from '../../firebase-applet-config.json';
 
 const envConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
@@ -19,29 +18,17 @@ const envConfig = {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID as string | undefined,
 };
 
-const hasEnvOverride = Boolean(envConfig.apiKey && envConfig.projectId && envConfig.appId);
+const firebaseConfig = {
+  apiKey: envConfig.apiKey,
+  authDomain: envConfig.authDomain,
+  projectId: envConfig.projectId,
+  storageBucket: envConfig.storageBucket,
+  messagingSenderId: envConfig.messagingSenderId,
+  appId: envConfig.appId,
+};
 
-const firebaseConfig = hasEnvOverride
-  ? {
-      apiKey: envConfig.apiKey!,
-      authDomain: envConfig.authDomain || firebaseAppletConfig.authDomain,
-      projectId: envConfig.projectId!,
-      storageBucket: envConfig.storageBucket || firebaseAppletConfig.storageBucket,
-      messagingSenderId: envConfig.messagingSenderId || firebaseAppletConfig.messagingSenderId,
-      appId: envConfig.appId!,
-    }
-  : {
-      apiKey: firebaseAppletConfig.apiKey,
-      authDomain: firebaseAppletConfig.authDomain,
-      projectId: firebaseAppletConfig.projectId,
-      storageBucket: firebaseAppletConfig.storageBucket,
-      messagingSenderId: firebaseAppletConfig.messagingSenderId,
-      appId: firebaseAppletConfig.appId,
-    };
+const firestoreDatabaseId = envConfig.firestoreDatabaseId || undefined;
 
-const firestoreDatabaseId =
-  (hasEnvOverride ? envConfig.firestoreDatabaseId : undefined) ||
-  firebaseAppletConfig.firestoreDatabaseId;
 
 const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
 
